@@ -1,0 +1,115 @@
+import express from "express";
+import { Sequelize, DataTypes } from "sequelize";
+import { generateCreditCard } from "credit-card-info-generator";
+const router = express.Router();
+
+router.get("/", (req, res) => {
+  res.send("Card endpoint");
+});
+
+const db = new Sequelize("");
+
+const card = db.define("card", {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  number: {
+    type: DataTypes.BIGINT,
+    allowNull: false,
+  },
+  holder: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  expiration: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  cvv: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  balance: {
+    type: DataTypes.DECIMAL,
+    allowNull: false,
+  },
+});
+db.sync()
+  .then(() => {
+    console.log("All models were synchronized successfully.");
+  })
+  .catch((error) => {
+    console.error("Error synchronizing models:", error);
+  });
+router.get("/new", async (req, res) => {
+  let name = req.query.name;
+  if (!name) {
+    res.status(500).json({ error: "Not Enough Inputs" });
+    return;
+  } else if (
+    !name.match(
+      /^([a-zA-Z]{2,}\s[a-zA-Z]{1,}'?-?[a-zA-Z]{2,}\s?([a-zA-Z]{1,})?)/gm
+    )
+  ) {
+    res.status(500).json({ error: "Name Is Invalid" });
+    return;
+  }
+
+  const existingCard = await card.findOne({ where: { holder: name } });
+  if (existingCard) {
+    res.status(500).json({ error: "Card with the same name already exists" });
+    return;
+  }
+  let number = generateCreditCard("Visa");
+  number = number.cardNumber;
+  number = number.toString();
+  let ccv = [number.charAt(4), number.charAt(8), number.charAt(12)];
+  ccv = ccv.sort(function (a, b) {
+    return Math.floor(Math.random() * 3 - 1);
+  });
+  ccv = ccv.join("");
+  number = parseInt(number);
+  const today = new Date();
+  let expiration = `${String(today.getMonth() + 1).padStart(2, "0")}/${
+    today.getFullYear() + 4
+  }`;
+
+  await card.create({
+    number: number,
+    holder: name,
+    expiration: expiration,
+    cvv: ccv,
+    balance: 0.0,
+  });
+
+  const info = {
+    number: number,
+    holder: name,
+    expiration: expiration,
+    cvv: ccv,
+    balance: 0.0,
+  };
+  res.json(info);
+});
+
+router.get("/balance", async (req, res) => {
+  const { number, cvv } = req.query;
+  if (!number || !cvv) {
+    res.status(500).json({ error: "Not Enough Inputs" });
+    return;
+  } else if (number.length !== 13 || cvv.length !== 3) {
+    res.status(500).json({ error: "Invalid Inputs" });
+    return;
+  }
+  const clientCard = await card.findOne({
+    where: { number: number, cvv: cvv },
+  });
+  if (!clientCard) {
+    res.status(500).json({ error: "Card not found" });
+    return;
+  }
+  res.json({ balance: clientCard.balance });
+});
+export default router;
