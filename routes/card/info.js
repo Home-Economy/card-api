@@ -2,10 +2,8 @@ import express from "express";
 import { Sequelize, DataTypes } from "sequelize";
 import { generateCreditCard } from "credit-card-info-generator";
 const router = express.Router();
-
-router.get("/", (req, res) => {
-  res.send("Card endpoint");
-});
+import chalk from "chalk";
+import e from "express";
 
 const db = new Sequelize("");
 
@@ -36,6 +34,10 @@ const card = db.define("card", {
     allowNull: false,
   },
 });
+console.log(
+  chalk.green.bold("INFO | "),
+  chalk.white("Synchronizing models...")
+);
 db.sync()
   .then(() => {
     console.log("All models were synchronized successfully.");
@@ -43,6 +45,11 @@ db.sync()
   .catch((error) => {
     console.error("Error synchronizing models:", error);
   });
+
+console.log(
+  chalk.green.bold("INFO | "),
+  chalk.white("Models synchronized (info)")
+);
 router.get("/new", async (req, res) => {
   let name = req.query.name;
   if (!name) {
@@ -99,7 +106,7 @@ router.get("/balance", async (req, res) => {
   if (!number || !cvv) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
-  } else if (number.length !== 13 || cvv.length !== 3) {
+  } else if (number.length <= 12 || cvv.length !== 3) {
     res.status(500).json({ error: "Invalid Inputs" });
     return;
   }
@@ -112,4 +119,24 @@ router.get("/balance", async (req, res) => {
   }
   res.json({ balance: clientCard.balance });
 });
+
+router.get("/lookup", async (req, res) => {
+  const { number, cvv, id } = req.query;
+  if (!number || !cvv || !id) {
+    res.status(500).json({ error: "Not Enough Inputs" });
+    return;
+  } else if (number.length !== 13 || cvv.length !== 3) {
+    res.status(500).json({ error: "Invalid Inputs" });
+    return;
+  }
+  const clientCard = await card.findOne({
+    where: { number: number, cvv: cvv, id: id },
+  });
+  if (!clientCard) {
+    res.status(500).json({ error: "Card not found" });
+    return;
+  }
+  res.json(clientCard);
+});
 export default router;
+export { card, db, DataTypes };
