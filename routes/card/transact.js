@@ -1,6 +1,5 @@
 import express from "express";
 const router = express.Router();
-import chalk from "chalk";
 import { card, db, DataTypes } from "./info.js";
 
 const transactions = db.define("transactions", {
@@ -201,3 +200,4 @@ router.get("/listStatements", async (req, res) => {
 });
 
 export default router;
+export { transactions, storeStock };

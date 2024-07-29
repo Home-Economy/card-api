@@ -3,7 +3,6 @@ import { Sequelize, DataTypes } from "sequelize";
 import { generateCreditCard } from "credit-card-info-generator";
 const router = express.Router();
 import chalk from "chalk";
-import e from "express";
 
 const db = new Sequelize("");
 
@@ -46,10 +45,7 @@ db.sync()
     console.error("Error synchronizing models:", error);
   });
 
-console.log(
-  chalk.green.bold("INFO | "),
-  chalk.white("Models synchronized (info)")
-);
+console.log(chalk.green.bold("INFO | "), chalk.white("Models synchronized"));
 router.get("/new", async (req, res) => {
   let name = req.query.name;
   if (!name) {
