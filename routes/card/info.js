@@ -29,7 +29,7 @@ const card = db.define("card", {
     allowNull: false,
   },
   balance: {
-    type: DataTypes.DECIMAL,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
 });
@@ -48,7 +48,8 @@ db.sync()
 console.log(chalk.green.bold("INFO | "), chalk.white("Models synchronized"));
 router.get("/new", async (req, res) => {
   let name = req.query.name;
-  if (!name) {
+  let code = req.query.code;
+  if (!name || !code) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
   } else if (
@@ -57,6 +58,9 @@ router.get("/new", async (req, res) => {
     )
   ) {
     res.status(500).json({ error: "Name Is Invalid" });
+    return;
+  } else if (!code === "chen") {
+    res.status(500).json({ error: "Invalid Code" });
     return;
   }
 
@@ -93,21 +97,22 @@ router.get("/new", async (req, res) => {
     expiration: expiration,
     cvv: ccv,
     balance: 0.0,
+    message: "Success",
   };
   res.json(info);
 });
 
 router.get("/balance", async (req, res) => {
-  const { number, cvv } = req.query;
-  if (!number || !cvv) {
+  const { number } = req.query;
+  if (!number) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
-  } else if (number.length <= 12 || cvv.length !== 3) {
+  } else if (number.length <= 12) {
     res.status(500).json({ error: "Invalid Inputs" });
     return;
   }
   const clientCard = await card.findOne({
-    where: { number: number, cvv: cvv },
+    where: { number: number },
   });
   if (!clientCard) {
     res.status(500).json({ error: "Card not found" });

@@ -1,31 +1,41 @@
 import { card } from "./info.js";
 import { transactions } from "./transact.js";
 const router = express.Router();
+import express from "express";
 import chalk from "chalk";
+import { parse } from "dotenv";
 
 router.get("/add", async (req, res) => {
-  const id = req.query.id;
+  const name = req.query.name;
   const amount = req.query.amount;
-  const statement = req.query.statement;
-  if (!id || !amount || !statement) {
+  if (!name || !amount) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
   }
+
   const clientCard = await card.findOne({
-    where: { id: id },
+    where: { holder: name },
   });
+
   if (!clientCard) {
     res.status(500).json({ error: "Card not found" });
     return;
   }
-  clientCard.balance += parseFloat(amount);
+
+  clientCard.balance = (
+    parseFloat(clientCard.balance) + parseFloat(amount)
+  ).toFixed(2);
   await clientCard.save();
+
+  console.log(`Updated balance: ${clientCard.balance}`);
+  id = parseInt(clientCard.id);
   const newTransaction = await transactions.create({
-    from: 999,
+    fromId: 999,
     to: id,
     amount: amount,
-    statement: "Admin Deposit: " + statement,
+    statement: "Admin Deposit: ",
   });
+
   res.json({
     balance: clientCard.balance,
     id: clientCard.id,
@@ -70,4 +80,5 @@ router.get("/userLogin", async (req, res) => {
     holder: clientCard.holder,
   });
 });
+
 export default router;

@@ -1,6 +1,7 @@
 import express from "express";
 const router = express.Router();
 import { card, db, DataTypes } from "./info.js";
+import { parse } from "dotenv";
 
 const transactions = db.define("transactions", {
   id: {
@@ -14,10 +15,10 @@ const transactions = db.define("transactions", {
   },
   toId: {
     type: DataTypes.INTEGER,
-    allowNull: true,
+    allowNull: false,
   },
   amount: {
-    type: DataTypes.DECIMAL,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
   statement: {
@@ -36,7 +37,7 @@ const storeStock = db.define("storeStock", {
     allowNull: false,
   },
   price: {
-    type: DataTypes.DECIMAL,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
   stock: {
@@ -53,8 +54,7 @@ router.get("/pay", async (req, res) => {
   let from = req.query.from;
   let to = req.query.to;
   let amount = req.query.amount;
-  let statement = req.query.statement;
-  if (!from || !to || !amount || !statement) {
+  if (!from || !to || !amount) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
   }
@@ -62,7 +62,7 @@ router.get("/pay", async (req, res) => {
     where: { id: from },
   });
   const toCard = await card.findOne({
-    where: { id: to },
+    where: { holder: to },
   });
   if (!fromCard || !toCard) {
     res.status(500).json({ error: "Card Not Found" });
@@ -83,9 +83,9 @@ router.get("/pay", async (req, res) => {
   await toCard.save();
   const newTransaction = await transactions.create({
     fromId: from,
-    toId: to,
+    toId: toCard.id,
     amount: amount,
-    statement: `J-Pay: ${req.query.statement}`,
+    statement: `J-Pay from ${fromCard.holder} to ${toCard.holder}`,
   });
   res.status(200).json({ message: "Transaction Successful" });
 });
@@ -97,16 +97,20 @@ router.get("/storeItems", async (req, res) => {
 
 router.get("/buy", async (req, res) => {
   let from = req.query.from;
-  let item = req.query.item;
-  if (!from || !item) {
+  let itemID = req.query.itemID;
+  let amount = req.query.amount;
+  if (!from || !itemID || !amount) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
   }
   const fromCard = await card.findOne({
-    where: { id: from },
+    where: { number: from },
   });
   const storeItem = await storeStock.findOne({
-    where: { item: item },
+    where: { id: itemID },
+  });
+  const goverment = await card.findOne({
+    where: { holder: "Jiayang Chen" },
   });
   if (!fromCard) {
     res.status(500).json({ error: "Card Not Found" });
@@ -116,22 +120,29 @@ router.get("/buy", async (req, res) => {
     res.status(500).json({ error: "Item Not Found" });
     return;
   }
-  if (fromCard.balance < storeItem.price) {
+  let totalCost = storeItem.price * amount;
+  let tax = totalCost * 0.0625;
+  if (fromCard.balance < totalCost + tax) {
     res.status(500).json({ error: "Insufficient Funds" });
     return;
   }
-  fromCard.balance -= storeItem.price;
-  storeItem.stock -= 1;
+  if (storeItem.stock < amount) {
+    res.status(500).json({ error: "Insufficient Stock" });
+    return;
+  }
+  fromCard.balance -= totalCost + tax;
+  storeItem.stock -= amount;
+  goverment.balance += tax;
   if (storeItem.stock === 0) {
     await storeItem.destroy();
   }
   await fromCard.save();
   await storeItem.save();
-  const newTransaction = await transactions.create({
-    fromId: from,
+  await transactions.create({
+    fromId: fromCard.id,
     toId: 999,
     amount: storeItem.price,
-    statement: `STORE: ${storeItem.item}`,
+    statement: `STORE: ${storeItem.item} x${amount}`,
   });
   res.status(200).json({ message: "Transaction Successful" });
 });
@@ -165,14 +176,16 @@ router.get("/edit", async (req, res) => {
   let item = req.query.item;
   let price = req.query.price;
   let stock = req.query.stock;
+  let imageURL = req.query.imageURL;
+  let itemID = req.query.itemID;
 
-  if (!item) {
-    res.status(500).json({ error: "Item is required" });
+  if (!itemID) {
+    res.status(500).json({ error: "ItemID is required" });
     return;
   }
 
   const existingItem = await storeStock.findOne({
-    where: { item: item },
+    where: { id: itemID },
   });
 
   if (!existingItem) {
@@ -180,22 +193,39 @@ router.get("/edit", async (req, res) => {
     return;
   }
 
-  existingItem.price = price;
-  existingItem.stock = stock;
+  if (parseInt(stock, 10) === 0) {
+    await existingItem.destroy();
+    res.status(200).json({ message: "Item Edited" });
+    return;
+  }
+
+  if (item) existingItem.item = item;
+  if (price) existingItem.price = parseFloat(price);
+  if (stock) existingItem.stock = parseInt(stock, 10);
+  if (imageURL) existingItem.imageURL = imageURL;
+
   await existingItem.save();
   res.status(200).json({ message: "Item Edited" });
 });
 
 router.get("/listStatements", async (req, res) => {
   const id = req.query.id;
+  const page = parseInt(req.query.page, 10) || 1;
+  const pageSize = parseInt(req.query.pageSize, 10) || 10;
   if (!id) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
   }
+  const offset = (page - 1) * pageSize;
+
   const statements = await transactions.findAll({
     fromId: id,
     toId: id,
+    order: [["createdAt", "DESC"]],
+    limit: pageSize,
+    offset: offset,
   });
+
   res.status(200).json(statements);
 });
 
