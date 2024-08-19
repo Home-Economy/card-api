@@ -42,4 +42,26 @@ router.get("/verify", async (req, res) => {
   res.json(info);
 });
 
+router.post("/add", async (req, res) => {
+  let hash = req.body.hash;
+  let amount = req.body.amount;
+  if (!hash || !amount) {
+    res.status(500).json({ error: "Not Enough Inputs" });
+    return;
+  }
+
+  const validity = await cash.findOne({ where: { hash: hash } });
+
+  if (validity) {
+    res.status(500).json({ error: "Hash Already Exists" });
+    return;
+  }
+
+  const newCash = await cash.create({
+    hash: hash,
+    amount: amount,
+  });
+
+  res.json(newCash);
+});
 export default router;
