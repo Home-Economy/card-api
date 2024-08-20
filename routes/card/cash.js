@@ -56,6 +56,7 @@ router.get("/add", async (req, res) => {
     res.status(500).json({ error: "Hash Already Exists" });
     return;
   }
+  hash = parseInt(hash);
 
   const newCash = await cash.create({
     hash: hash,
