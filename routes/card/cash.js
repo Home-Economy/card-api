@@ -43,8 +43,8 @@ router.get("/verify", async (req, res) => {
 });
 
 router.get("/add", async (req, res) => {
-  let hash = req.body.hash;
-  let amount = req.body.amount;
+  let hash = req.query.hash;
+  let amount = req.query.amount;
   if (!hash || !amount) {
     res.status(500).json({ error: "Not Enough Inputs" });
     return;
