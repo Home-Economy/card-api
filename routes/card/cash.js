@@ -42,7 +42,7 @@ router.get("/verify", async (req, res) => {
   res.json(info);
 });
 
-router.post("/add", async (req, res) => {
+router.get("/add", async (req, res) => {
   let hash = req.body.hash;
   let amount = req.body.amount;
   if (!hash || !amount) {
