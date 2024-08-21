@@ -29,7 +29,7 @@ router.get("/add", async (req, res) => {
   await clientCard.save();
 
   console.log(`Updated balance: ${clientCard.balance}`);
-  id = clientCard.id;
+  id = parseInt(clientCard.id);
   const newTransaction = await transactions.create({
     fromId: 999,
     to: id,
@@ -39,7 +39,7 @@ router.get("/add", async (req, res) => {
 
   res.status(200).json({
     balance: clientCard.balance,
-    id: clientCard.id,
+    id: id,
     amount: amount,
     message: "Success",
   });
