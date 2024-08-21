@@ -32,7 +32,7 @@ router.get("/add", async (req, res) => {
   id = parseInt(clientCard.id);
   const newTransaction = await transactions.create({
     fromId: 999,
-    to: id,
+    toId: id,
     amount: amount,
     statement: "Admin Deposit: ",
   });
