@@ -6,6 +6,7 @@ import chalk from "chalk";
 import { parse } from "dotenv";
 
 router.get("/add", async (req, res) => {
+  let id;
   const name = req.query.name;
   const amount = req.query.amount;
   if (!name || !amount) {
