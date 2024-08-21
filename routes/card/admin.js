@@ -36,7 +36,7 @@ router.get("/add", async (req, res) => {
     statement: "Admin Deposit: ",
   });
 
-  res.json({
+  res.status(200).json({
     balance: clientCard.balance,
     id: clientCard.id,
     amount: amount,
