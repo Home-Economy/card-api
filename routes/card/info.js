@@ -3,8 +3,10 @@ import { Sequelize, DataTypes } from "sequelize";
 import { generateCreditCard } from "credit-card-info-generator";
 const router = express.Router();
 import chalk from "chalk";
+import dotenv from "dotenv";
+dotenv.config();
 
-const db = new Sequelize("");
+const db = new Sequelize(process.env.DATABASE_URL);
 
 const card = db.define("card", {
   id: {

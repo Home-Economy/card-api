@@ -1,7 +1,6 @@
 import express from "express";
 const router = express.Router();
 import { card, db, DataTypes } from "./info.js";
-import { parse } from "dotenv";
 
 const transactions = db.define("transactions", {
   id: {

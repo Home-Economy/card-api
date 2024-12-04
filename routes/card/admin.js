@@ -2,8 +2,6 @@ import { card } from "./info.js";
 import { transactions } from "./transact.js";
 const router = express.Router();
 import express from "express";
-import chalk from "chalk";
-import { parse } from "dotenv";
 
 router.get("/add", async (req, res) => {
   let id;
