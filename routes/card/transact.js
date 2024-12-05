@@ -1,6 +1,7 @@
 import express from "express";
 const router = express.Router();
 import { card, db, DataTypes } from "./info.js";
+import { Op } from "sequelize";
 
 const transactions = db.define("transactions", {
   id: {
