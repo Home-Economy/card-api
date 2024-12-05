@@ -218,8 +218,9 @@ router.get("/listStatements", async (req, res) => {
   const offset = (page - 1) * pageSize;
 
   const statements = await transactions.findAll({
-    fromId: id,
-    toId: id,
+    where: {
+      [Op.or]: [{ fromId: id }, { toId: id }],
+    },
     order: [["createdAt", "DESC"]],
     limit: pageSize,
     offset: offset,
