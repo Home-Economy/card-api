@@ -25,3 +25,4 @@ app.listen(3000, () => {
     chalk.white("Server is running on port 3000")
   );
 });
+
